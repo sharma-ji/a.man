@@ -6,44 +6,46 @@ import numpy as np
 import argparse
 import imutils
 import cv2
-capture = cv2.VideoCapture('7.mp4') #set it 0 for webcam
-background = cv2.createBackgroundSubtractorMOG2() #background subtraction system
-humans = cv2.CascadeClassifier('haarcascade_fullbody.xml') #Loading Haar files
+
+# construct the argument parse and parse the arguments
+capture = cv2.VideoCapture('7.mp4')
+background = cv2.createBackgroundSubtractorMOG2()
+humans = cv2.CascadeClassifier('haarcascade_fullbody.xml')
 upper = cv2.CascadeClassifier('haarcascade_upperbody.xml')
 face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
 eye_cascade = cv2.CascadeClassifier('haarcascade_eye.xml')
 # initialize the HOG descriptor/person detector
 hog = cv2.HOGDescriptor()
-hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector()) #The SVM classifier with People data
+hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
 
 # loop over the image paths
 while True:
 	# load the image and resize it to (1) reduce detection time
 	# and (2) improve detection accuracy
-	ret,image = capture.read()  #reading frames
-	#ubcomment the below to invert the image
+	ret,image = capture.read()
 	#image = cv2.flip(image,1)
 	image = imutils.resize(image, width=min(400, image.shape[1]))
 	orig = image.copy()
 	mask = background.apply(image)
-	image = cv2.flip(image,1)
+	#mask = cv2.erode(mask,None, iterations=1)
+	#mask = cv2.dilate(mask,None, iterations=1)
 	gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 	people = humans.detectMultiScale(gray, 2, 2)
-	for (x,y,w,h) in people:                             #Full body detect
+	for (x,y,w,h) in people:
 		cv2.rectangle(image, (x,y), (x+w,y+h), (0,255,0), 2)
-	upper_body = upper.detectMultiScale(gray,2,2)         #upper body detect
+	upper_body = upper.detectMultiScale(gray,2,2)
 	for(x,y,w,h) in upper_body:
 		cv2.rectangle(image, (x,y), (x+w,y+h), (0,255,0), 2)
-	faces = face_cascade.detectMultiScale(gray, 1.3, 5)    #Face detect
+	faces = face_cascade.detectMultiScale(gray, 1.3, 5)
 	for (x,y,w,h) in faces:
 		cv2.rectangle(image,(x,y),(x+w,y+h),(255,0,0),2)
 		roi_gray = gray[y:y+h, x:x+w]
 		roi_color = image[y:y+h, x:x+w]
-		eyes = eye_cascade.detectMultiScale(roi_gray)	#eye detect
+		eyes = eye_cascade.detectMultiScale(roi_gray)
 		for (ex,ey,ew,eh) in eyes:
 			cv2.rectangle(roi_color,(ex,ey),(ex+ew,ey+eh),(0,255,0),2)
 	# detect people in the image
-	(rects, weights) = hog.detectMultiScale(orig, winStride=(4, 4),				#SVM detection system
+	(rects, weights) = hog.detectMultiScale(orig, winStride=(4, 4),
 		padding=(8, 8), scale=1.05)
  
 	# draw the original bounding boxes
